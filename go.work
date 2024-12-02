@@ -2,5 +2,6 @@ go 1.23.2
 
 use (
 	./day1
+	./day2
 	./utils
 )
