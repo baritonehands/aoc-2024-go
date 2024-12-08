@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/BooleanCat/go-functional/v2/it"
 	"iter"
@@ -15,6 +16,15 @@ type Point struct {
 
 func (p Point) String() string {
 	return fmt.Sprintf("(%d,%d)", p.X, p.Y)
+}
+
+func PointCompare(p1 Point, p2 Point) int {
+	x := cmp.Compare(p1.X, p2.X)
+	if x != 0 {
+		return x
+	}
+	y := cmp.Compare(p1.Y, p2.Y)
+	return y
 }
 
 func Split2(s string) (string, string) {
