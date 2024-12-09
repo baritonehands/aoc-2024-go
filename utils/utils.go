@@ -93,9 +93,7 @@ func Partition[T any](slice []T, n int, step int) iter.Seq[iter.Seq[T]] {
 	ret := it.Exhausted[iter.Seq[T]]()
 	for i := 0; i < len(slice); i += step {
 		inner := slice[i:min(i+n, len(slice))]
-		if len(inner) == n {
-			ret = it.Chain(ret, it.Once(slices.Values(inner)))
-		}
+		ret = it.Chain(ret, it.Once(slices.Values(inner)))
 	}
 	return ret
 }
