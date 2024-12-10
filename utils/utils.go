@@ -18,13 +18,30 @@ func (p Point) String() string {
 	return fmt.Sprintf("(%d,%d)", p.X, p.Y)
 }
 
-func PointCompare(p1 Point, p2 Point) int {
-	x := cmp.Compare(p1.X, p2.X)
-	if x != 0 {
-		return x
+func (p Point) OrthogonalNeighbors(xMax, yMax int) []Point {
+	ret := make([]Point, 0, 4)
+	if p.X < xMax {
+		ret = append(ret, Point{p.X + 1, p.Y})
 	}
+	if p.Y < yMax {
+		ret = append(ret, Point{p.X, p.Y + 1})
+	}
+	if p.X > 0 {
+		ret = append(ret, Point{p.X - 1, p.Y})
+	}
+	if p.Y > 0 {
+		ret = append(ret, Point{p.X, p.Y - 1})
+	}
+	return ret
+}
+
+func PointCompare(p1 Point, p2 Point) int {
 	y := cmp.Compare(p1.Y, p2.Y)
-	return y
+	if y != 0 {
+		return y
+	}
+	x := cmp.Compare(p1.X, p2.X)
+	return x
 }
 
 func Split2(s string) (string, string) {
