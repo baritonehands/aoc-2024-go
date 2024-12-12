@@ -35,13 +35,22 @@ func (p Point) OrthogonalNeighbors(xMax, yMax int) []Point {
 	return ret
 }
 
-func PointCompare(p1 Point, p2 Point) int {
+func PointCompareYX(p1 Point, p2 Point) int {
 	y := cmp.Compare(p1.Y, p2.Y)
 	if y != 0 {
 		return y
 	}
 	x := cmp.Compare(p1.X, p2.X)
 	return x
+}
+
+func PointCompareXY(p1 Point, p2 Point) int {
+	x := cmp.Compare(p1.X, p2.X)
+	if x != 0 {
+		return x
+	}
+	y := cmp.Compare(p1.Y, p2.Y)
+	return y
 }
 
 func Split2(s string) (string, string) {

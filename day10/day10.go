@@ -47,7 +47,7 @@ func part1() {
 
 	part1Score := 0
 	part2Score := 0
-	for _, head := range slices.SortedFunc(maps.Keys(heads), utils.PointCompare) {
+	for _, head := range slices.SortedFunc(maps.Keys(heads), utils.PointCompareYX) {
 		scored := map[utils.Point]bool{}
 		p2Score := 0
 		bfs := [][]utils.Point{{head}}
