@@ -1,0 +1,16 @@
+Formula Derivation for Part2
+
+a * aX + b * bX = pX
+a * aX = pX - (b * bX)
+a = (pX - (b * bX)) / aX
+
+a * aY + b * bY = pY
+((pX - (b * bX)) / aX) * aY = pY - b * bY
+(pX - (b * bX)) / aX = (pY - b * bY) / aY
+(pX - (b * bX)) * aY = (pY - b * bY) * aX
+(pX * aY - (aY * b * bX)) = (pY * aX - (aX * b * bY))
+(pX * aY - (aY * b * bX)) = (pY * aX - (aX * b * bY))
+(pX * aY - (aY * b * bX)) - (pY * aX) = - (aX * b * bY)
+(pX * aY) - (pY * aX) = (aY * b * bX) - (aX * b * bY)
+(pX * aY) - (pY * aX) = b * ((aY * bX) - (aX * bY))
+((pX * aY) - (pY * aX)) / ((aY * bX) - (aX * bY)) = b
