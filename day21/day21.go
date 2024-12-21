@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"github.com/BooleanCat/go-functional/v2/it"
 	"github.com/baritonehands/aoc-2024-go/utils"
 	"math"
 	"slices"
@@ -105,9 +106,21 @@ func path2Dirs(path []utils.Point) string {
 	return string(ret)
 }
 
+type PathCacheKey struct {
+	isArrow  bool
+	from, to utils.Point
+}
+
+var pathCache = map[PathCacheKey][]string{}
+
 func allPaths(grid Grid, start, end utils.Point) []string {
 	if start == end {
 		return []string{"A"}
+	}
+
+	cacheKey := PathCacheKey{&grid == &arrowGrid, start, end}
+	if result, found := pathCache[cacheKey]; found {
+		return result
 	}
 
 	bfs := [][]utils.Point{{start}}
@@ -138,6 +151,7 @@ func allPaths(grid Grid, start, end utils.Point) []string {
 			}
 		}
 	}
+	pathCache[cacheKey] = ret
 	return ret
 }
 
@@ -149,6 +163,42 @@ type Part1 struct {
 
 func (part1 *Part1) Score() int {
 	return int(part1.numeric) * len(part1.presses)
+}
+
+type Part2 struct {
+	code    string
+	numeric int64
+	presses int
+}
+
+func (part2 *Part2) Score() int {
+	return int(part2.numeric) * part2.presses
+}
+
+func computeArrowPaths(paths []string, level int) int {
+	smallestArrowPath1 := math.MaxInt
+	for _, arrowPath1 := range paths {
+		sbArrow1 := 0
+		lastArrow1Pos := arrowGrid.start
+		for _, arrow1 := range arrowPath1 {
+			arrow1Pos := arrowGrid.points[byte(arrow1)]
+			arrowPaths2 := allPaths(arrowGrid, lastArrow1Pos, arrow1Pos)
+			if level == 1 {
+				smallest, _ := it.Min(it.Map(slices.Values(arrowPaths2), func(s string) int {
+					return len(s)
+				}))
+				sbArrow1 += smallest
+			} else {
+				sbArrow1 += computeArrowPaths(arrowPaths2, level-1)
+			}
+
+			lastArrow1Pos = arrow1Pos
+		}
+		if sbArrow1 < smallestArrowPath1 {
+			smallestArrowPath1 = sbArrow1
+		}
+	}
+	return smallestArrowPath1
 }
 
 func main() {
@@ -236,4 +286,29 @@ func main() {
 		part1Sum += item.Score()
 	}
 	fmt.Println(part1Sum)
+
+	example := allPaths(arrowGrid, arrowGrid.start, arrowGrid.points['<'])
+	fmt.Println(example, computeArrowPaths(example, 1))
+
+	part2 := []Part2{}
+	for _, code := range codes {
+		codeLen := 0
+		lastDigitPos := numberGrid.start
+		for _, digit := range code {
+			digitPos := numberGrid.points[byte(digit)]
+			arrowPaths1 := allPaths(numberGrid, lastDigitPos, digitPos)
+			codeLen += computeArrowPaths(arrowPaths1, 2)
+
+			lastDigitPos = digitPos
+		}
+		numeric, _ := strconv.ParseInt(code[:len(code)-1], 10, 0)
+		result := Part2{code, numeric, codeLen}
+		part2 = append(part2, result)
+	}
+	fmt.Println("part2", part2)
+	part2Sum := 0
+	for _, item := range part2 {
+		part2Sum += item.Score()
+	}
+	fmt.Println(part2Sum)
 }
