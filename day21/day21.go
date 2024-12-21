@@ -4,19 +4,20 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/baritonehands/aoc-2024-go/utils"
-	pq "github.com/baritonehands/aoc-2024-go/utils/priority_queue"
 	"math"
 	"slices"
 	"strconv"
 	"strings"
 )
 
-// go:embed input.txt
-var input string = `029A
-980A
-179A
-456A
-379A`
+//go:embed input.txt
+var input string
+
+//= `029A
+//980A
+//179A
+//456A
+//379A`
 
 type Grid struct {
 	xMax, yMax int
@@ -79,14 +80,6 @@ type NumPath struct {
 	from, to int
 }
 
-var keypadPaths = map[NumPath]map[byte]int{}
-
-func nyDistance(start utils.Point, end utils.Point) int {
-	ret := int(math.Abs(float64(end.Y-start.Y)) +
-		math.Abs(float64(end.X-start.X)))
-	return ret
-}
-
 func path2Dirs(path []utils.Point) string {
 	ret := []byte{}
 	current := path[0]
@@ -108,60 +101,44 @@ func path2Dirs(path []utils.Point) string {
 		ret = append(ret, dir)
 		current = next
 	}
+	ret = append(ret, 'A')
 	return string(ret)
 }
 
-func walkPath(cameFrom map[utils.Point]utils.Point, current utils.Point) []utils.Point {
-	ret := []utils.Point{current}
+func allPaths(grid Grid, start, end utils.Point) []string {
+	if start == end {
+		return []string{"A"}
+	}
+
+	bfs := [][]utils.Point{{start}}
+	ret := []string{}
+	shortestLen := math.MaxInt
 	for {
-		if next, ok := cameFrom[current]; ok {
-			current = next
-			ret = append(ret, current)
-		} else {
+		if len(bfs) == 0 {
 			break
 		}
-	}
-	return ret
-}
 
-func shortestPath(grid Grid, start, end utils.Point) string {
-	fScore := map[utils.Point]int{start: nyDistance(start, end)}
-	fScoreFn := func(point utils.Point) int { return fScore[point] }
-	openSet := pq.NewQueue[int, utils.Point](fScoreFn, start)
+		curPath := bfs[0]
+		bfs = bfs[1:]
 
-	cameFrom := map[utils.Point]utils.Point{}
-	gScore := map[utils.Point]int{start: 0}
-
-	for {
-		current := openSet.Peek()
-
-		if current == end {
-			// Walk path
-			path := walkPath(cameFrom, current)
-			slices.Reverse(path)
-			return path2Dirs(path)
-		} else {
-			openSet.Poll()
-
-			// For each neighbor of current
-			for _, neighbor := range current.OrthogonalNeighbors(grid.xMax, grid.yMax) {
-				if grid.items[neighbor] != 0 {
-					g := gScore[current] + 1
-					gNeighbor, found := gScore[neighbor]
-					if !found || g < gNeighbor {
-						fScore[neighbor] = g + nyDistance(neighbor, end)
-
-						cameFrom[neighbor] = current
-						gScore[neighbor] = g
-						openSet.Append(neighbor)
+		current := curPath[len(curPath)-1]
+		for _, neighbor := range current.OrthogonalNeighbors(grid.xMax, grid.yMax) {
+			if len(curPath)+1 <= shortestLen && !slices.Contains(curPath, neighbor) && grid.items[neighbor] != 0 {
+				nextPath := slices.Clone(curPath)
+				nextPath = append(nextPath, neighbor)
+				if neighbor == end {
+					if len(nextPath) < shortestLen {
+						shortestLen = len(nextPath)
+						clear(ret)
 					}
+					ret = append(ret, path2Dirs(nextPath))
+				} else {
+					bfs = append(bfs, nextPath)
 				}
 			}
 		}
-
 	}
-
-	panic("Shouldn't happen")
+	return ret
 }
 
 type Part1 struct {
@@ -174,56 +151,84 @@ func (part1 *Part1) Score() int {
 	return int(part1.numeric) * len(part1.presses)
 }
 
-func arrowPath() {
-
-}
-
 func main() {
 	codes := strings.Split(input, "\n")
 	fmt.Println(codes)
 
-	p1 := shortestPath(numberGrid, utils.Point{0, 2}, utils.Point{2, 0})
-	p2 := shortestPath(arrowGrid, arrowGrid.points[p1[0]], arrowGrid.points[p1[1]])
+	p1 := allPaths(numberGrid, utils.Point{0, 2}, utils.Point{2, 0})
+	p2 := []string{}
+	for _, path := range p1[:1] {
+		nextBot := allPaths(arrowGrid, arrowGrid.start, arrowGrid.points[path[0]])
+		p2 = append(p2, nextBot...)
+	}
 	fmt.Println(p1, p2)
 	fmt.Println()
 
+	fmt.Println(allPaths(numberGrid, utils.Point{0, 0}, utils.Point{0, 1}))
+	fmt.Println(allPaths(numberGrid, utils.Point{0, 0}, utils.Point{2, 1}))
+
 	part1 := []Part1{}
 	for _, code := range codes {
-		sb := strings.Builder{}
+		sbCode := strings.Builder{}
 		lastDigitPos := numberGrid.start
 		for _, digit := range code {
 			digitPos := numberGrid.points[byte(digit)]
-			arrowPath1 := shortestPath(numberGrid, lastDigitPos, digitPos)
-			arrowPath1 += "A"
-			//fmt.Println(code, string(digit), arrowPath1)
+			arrowPaths1 := allPaths(numberGrid, lastDigitPos, digitPos)
+			var smallestArrowPath1 *strings.Builder
+			for _, arrowPath1 := range arrowPaths1 {
+				sbArrow1 := strings.Builder{}
+				lastArrow1Pos := arrowGrid.start
+				for _, arrow1 := range arrowPath1 {
+					arrow1Pos := arrowGrid.points[byte(arrow1)]
+					arrowPaths2 := allPaths(arrowGrid, lastArrow1Pos, arrow1Pos)
+					var smallestArrowPath2 *strings.Builder
+					for _, arrowPath2 := range arrowPaths2 {
+						sbArrow2 := strings.Builder{}
+						lastArrow2Pos := arrowGrid.start
+						for _, arrow2 := range arrowPath2 {
+							arrow2Pos := arrowGrid.points[byte(arrow2)]
+							arrowPaths3 := allPaths(arrowGrid, lastArrow2Pos, arrow2Pos)
+							var smallestArrowPath3 *string
+							for _, arrowPath3 := range arrowPaths3 {
+								if smallestArrowPath3 == nil || len(arrowPath3) < len(*smallestArrowPath3) {
+									smallestArrowPath3 = &arrowPath3
+								}
+							}
+							if smallestArrowPath3 != nil {
+								sbArrow2.WriteString(*smallestArrowPath3)
+							} else {
+								fmt.Println("No smallestArrowPath3", code, string(digit), string(arrow1), string(arrow2))
+							}
 
-			lastArrow1Pos := arrowGrid.start
-			for _, arrow1 := range arrowPath1 {
-				arrow1Pos := arrowGrid.points[byte(arrow1)]
-				arrowPath2 := shortestPath(arrowGrid, lastArrow1Pos, arrow1Pos)
-				arrowPath2 += "A"
-				//fmt.Println(code, string(digit), string(arrow1), arrowPath2)
-
-				lastArrow2Pos := arrowGrid.start
-				for _, arrow2 := range arrowPath2 {
-					arrow2Pos := arrowGrid.points[byte(arrow2)]
-					arrow3path := shortestPath(arrowGrid, lastArrow2Pos, arrow2Pos)
-					arrow3path += "A"
-					//fmt.Println(code, string(digit), string(arrow1), string(arrow2), arrow3path)
-					sb.WriteString(arrow3path)
-
-					lastArrow2Pos = arrow2Pos
+							lastArrow2Pos = arrow2Pos
+						}
+						if smallestArrowPath2 == nil || sbArrow2.Len() < smallestArrowPath2.Len() {
+							smallestArrowPath2 = &sbArrow2
+						}
+						lastArrow1Pos = arrow1Pos
+					}
+					if smallestArrowPath2 != nil {
+						sbArrow1.WriteString(smallestArrowPath2.String())
+					} else {
+						fmt.Println("No smallestArrowPath2", code, string(digit), string(arrow1))
+					}
+				}
+				if smallestArrowPath1 == nil || sbArrow1.Len() < smallestArrowPath1.Len() {
+					smallestArrowPath1 = &sbArrow1
 				}
 
-				lastArrow1Pos = arrow1Pos
+				lastDigitPos = digitPos
 			}
-
-			lastDigitPos = digitPos
+			if smallestArrowPath1 != nil {
+				sbCode.WriteString(smallestArrowPath1.String())
+			} else {
+				fmt.Println("No smallestArrowPath1", code, string(digit))
+			}
 		}
 		numeric, _ := strconv.ParseInt(code[:len(code)-1], 10, 0)
-		result := Part1{code, numeric, sb.String()}
+		result := Part1{code, numeric, sbCode.String()}
 		part1 = append(part1, result)
-		fmt.Println(result.Score())
+		fmt.Println(len(result.presses), result.numeric, result.Score())
 	}
 	fmt.Println("part1", part1)
 	part1Sum := 0
