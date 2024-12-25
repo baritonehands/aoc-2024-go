@@ -3,6 +3,8 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"github.com/BooleanCat/go-functional/v2/it"
+	"github.com/BooleanCat/go-functional/v2/it/op"
 	"github.com/baritonehands/aoc-2024-go/utils"
 	pq "github.com/baritonehands/aoc-2024-go/utils/priority_queue"
 	"maps"
@@ -11,22 +13,24 @@ import (
 	"strings"
 )
 
-// go:embed input.txt
-var input string = `###############
-#...#...#.....#
-#.#.#.#.#.###.#
-#S#...#.#.#...#
-#######.#.#.###
-#######.#.#...#
-#######.#.###.#
-###..E#...#...#
-###.#######.###
-#...###...#...#
-#.#####.#.###.#
-#.#...#.#.#...#
-#.#.#.#.#.#.###
-#...#...#...###
-###############`
+//go:embed input.txt
+var input string
+
+//= `###############
+//#...#...#.....#
+//#.#.#.#.#.###.#
+//#S#...#.#.#...#
+//#######.#.#.###
+//#######.#.#...#
+//#######.#.###.#
+//###..E#...#...#
+//###.#######.###
+//#...###...#...#
+//#.#####.#.###.#
+//#.#...#.#.#...#
+//#.#.#.#.#.#.###
+//#...#...#...###
+//###############`
 
 type Grid struct {
 	xMax, yMax int
@@ -52,7 +56,17 @@ func walkPath(cameFrom map[utils.Point]utils.Point, current utils.Point) []utils
 	return ret
 }
 
-func shortestPath(grid Grid, start, end utils.Point, cheat *Cheat) []utils.Point {
+type PathCacheKey struct {
+	start, end utils.Point
+}
+
+var pathCache = map[PathCacheKey][]utils.Point{}
+
+func shortestPath(grid Grid, start, end utils.Point) []utils.Point {
+	if v, ok := pathCache[PathCacheKey{start, end}]; ok {
+		return v
+	}
+
 	fScore := map[utils.Point]int{start: nyDistance(start, end)}
 	fScoreFn := func(point utils.Point) int { return fScore[point] }
 	openSet := pq.NewQueue[int, utils.Point](fScoreFn, start)
@@ -69,13 +83,15 @@ func shortestPath(grid Grid, start, end utils.Point, cheat *Cheat) []utils.Point
 
 		if current == end {
 			// Walk path
-			return walkPath(cameFrom, current)
+			ret := walkPath(cameFrom, current)
+			pathCache[PathCacheKey{start, end}] = ret
+			return ret
 		} else {
 			openSet.Poll()
 
 			// For each neighbor of current
 			for _, neighbor := range current.OrthogonalNeighbors(grid.xMax, grid.yMax) {
-				if (cheat != nil && (cheat.start == neighbor || cheat.end == neighbor)) || !grid.obstacles[neighbor] {
+				if !grid.obstacles[neighbor] {
 					g := gScore[current] + 1
 					gNeighbor, found := gScore[neighbor]
 					if !found || g < gNeighbor {
@@ -92,14 +108,6 @@ func shortestPath(grid Grid, start, end utils.Point, cheat *Cheat) []utils.Point
 	}
 
 	panic("Shouldn't happen")
-}
-
-func nextNeighbor(grid Grid, point utils.Point, dir utils.Point) (bool, utils.Point) {
-	neighbor := utils.Point{point.X + dir.X, point.Y + dir.Y}
-	if neighbor.X >= 0 && neighbor.X <= grid.xMax && neighbor.Y >= 0 && neighbor.Y <= grid.yMax {
-		return true, neighbor
-	}
-	return false, utils.Point{}
 }
 
 type Cheat struct {
@@ -142,37 +150,31 @@ func main() {
 	}
 	fmt.Println(grid)
 
-	baseline := shortestPath(grid, start, end, nil)
+	baseline := shortestPath(grid, start, end)
 	slices.Reverse(baseline)
-	part2 := map[Cheat]int{}
-	last := baseline[0]
-	for _, point := range baseline[1:] {
+	part1 := map[Cheat]int{}
+	for i, point := range baseline {
+		fmt.Println("Iteration", i)
 		for _, neighbor1 := range point.OrthogonalNeighbors(grid.xMax, grid.yMax) {
-			found, inPath := nextNeighbor(grid, point, utils.Point{point.X - last.X, point.Y - last.Y})
-			if ((found && grid.obstacles[inPath]) || !found) && grid.obstacles[neighbor1] {
+			if grid.obstacles[neighbor1] {
 				for _, neighbor2 := range neighbor1.OrthogonalNeighbors(grid.xMax, grid.yMax) {
-					if neighbor2 != point {
-						for _, point2 := range neighbor2.OrthogonalNeighbors(grid.xMax, grid.yMax) {
-							if !grid.obstacles[point2] && neighbor1 != point2 && point != point2 {
-								cheat := Cheat{neighbor1, neighbor2}
-								possible := shortestPath(grid, start, end, &cheat)
-								diff := len(baseline) - len(possible)
-								if _, found := part2[cheat]; !found && diff > 0 {
-									fmt.Println(diff)
-									printBoard(grid, cheat)
-									part2[cheat] = diff
-								}
-
-							}
+					if neighbor2 != point && !grid.obstacles[neighbor2] {
+						cheat := Cheat{neighbor1, neighbor2}
+						path1 := shortestPath(grid, start, point)
+						path2 := shortestPath(grid, neighbor2, end)
+						diff := len(baseline) - (len(path1) + len(path2) + 1)
+						if _, found := part1[cheat]; !found && diff >= 100 {
+							//fmt.Println(diff)
+							//printBoard(grid, cheat)
+							part1[cheat] = diff
 						}
 					}
 				}
 			}
 		}
-		last = point
 	}
 
-	part2Freq := utils.Frequencies(maps.Values(part2))
-	fmt.Println("part2Freq", part2Freq)
-	fmt.Println("part2", part2)
+	part1Freq := utils.Frequencies(maps.Values(part1))
+	fmt.Println("part1Freq", part1Freq)
+	fmt.Println("part1", it.Fold(maps.Values(part1Freq), op.Add, 0))
 }
