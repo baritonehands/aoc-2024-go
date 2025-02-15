@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/BooleanCat/go-functional/v2/it"
 	"github.com/baritonehands/aoc-2024-go/utils"
-	"iter"
 	"maps"
 	"slices"
 	"strconv"
@@ -91,8 +90,7 @@ func main() {
 
 	allWindows := make([][]Window, 0)
 	for _, diffs := range allDiffs {
-		windows := slices.Collect(it.Map(utils.Partition(diffs, 4, 1), func(seq iter.Seq[Diff]) Window {
-			slice := slices.Collect(seq)
+		windows := slices.Collect(it.Map(utils.Partition(diffs, 4, 1), func(slice []Diff) Window {
 			if len(slice) == 4 {
 				return Window{WindowKey{slice[0].diff, slice[1].diff, slice[2].diff, slice[3].diff}, slice[3].price}
 			} else {

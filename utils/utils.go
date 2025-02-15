@@ -115,11 +115,16 @@ func FlatMap2[V, W, X, Y any, S iter.Seq2[X, Y]](delegate func(func(V, W) bool),
 	}
 }
 
-func Partition[T any](slice []T, n int, step int) iter.Seq[iter.Seq[T]] {
-	ret := it.Exhausted[iter.Seq[T]]()
+func Partition[T any, S ~[]T](slice S, n int, step int) iter.Seq[S] {
+	if n == step {
+		return slices.Chunk(slice, n)
+	}
+	
+	ret := it.Exhausted[S]()
 	for i := 0; i < len(slice); i += step {
-		inner := slice[i:min(i+n, len(slice))]
-		ret = it.Chain(ret, it.Once(slices.Values(inner)))
+		innerLen := min(i+n, len(slice))
+		inner := slice[i:innerLen:innerLen]
+		ret = it.Chain(ret, it.Once(inner))
 	}
 	return ret
 }

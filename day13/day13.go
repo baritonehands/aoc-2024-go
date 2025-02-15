@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/baritonehands/aoc-2024-go/utils"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -69,9 +68,8 @@ func main() {
 	part2 := 0
 	groups := utils.Partition(lines, 3, 4)
 	configs := make([]ClawConfig, 0)
-	for group := range groups {
+	for parts := range groups {
 		config := ClawConfig{}
-		parts := slices.Collect(group)
 		a := parts[0]
 		config.A = decodePair(a[10:])
 		b := parts[1]

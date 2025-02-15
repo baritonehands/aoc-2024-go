@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/baritonehands/aoc-2024-go/utils"
-	"slices"
 	"strings"
 )
 
@@ -56,8 +55,7 @@ func main() {
 	lines = append(lines, "\n")
 	keys := [][]int{}
 	locks := [][]int{}
-	for keySeq := range utils.Partition(lines, 8, 8) {
-		key := slices.Collect(keySeq)
+	for key := range utils.Partition(lines, 8, 8) {
 		isLock := key[0][0] == '#'
 		sizes := make([]int, len(key[0]))
 		for _, row := range key[1 : len(key)-2] {

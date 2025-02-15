@@ -30,15 +30,13 @@ func isFree(file File) bool {
 }
 
 func main() {
-	utils.Points := utils.Partition([]byte(input), 2, 2)
+	points := utils.Partition([]byte(input), 2, 2)
 	part1 := make([]File, 0)
-	for id, utils.PointSeq := range it.Enumerate(utils.Points)
-	{
-		utils.Point := slices.Collect(utils.PointSeq)
-		size := utils.Point[0] - '0'
+	for id, point := range it.Enumerate(points) {
+		size := point[0] - '0'
 		part1 = append(part1, slices.Collect(it.Take(it.Repeat(File{id: id, size: 1}), uint(size)))...)
-		if len(utils.Point) > 1 {
-			part1 = append(part1, slices.Collect(it.Take(it.Repeat(free(1)), uint(utils.Point[1]-'0')))...)
+		if len(point) > 1 {
+			part1 = append(part1, slices.Collect(it.Take(it.Repeat(free(1)), uint(point[1]-'0')))...)
 		}
 	}
 
@@ -75,15 +73,13 @@ func main() {
 	freeBlocks := make(map[uint8][]int)
 	maxSize := -1
 	part2 := make([]int, 0)
-	for id, utils.PointSeq := range it.Enumerate(utils.Points)
-	{
-		utils.Point := slices.Collect(utils.PointSeq)
-		size := utils.Point[0] - '0'
+	for id, point := range it.Enumerate(points) {
+		size := point[0] - '0'
 		filesystem = append(filesystem, File{id: id, size: size})
 		part2 = append(part2, slices.Collect(it.Take(it.Repeat(id), uint(size)))...)
-		if len(utils.Point) > 1 {
+		if len(point) > 1 {
 			idx := len(part2)
-			freeSize := utils.Point[1] - '0'
+			freeSize := point[1] - '0'
 			if int(freeSize) > maxSize {
 				maxSize = int(freeSize)
 			}
